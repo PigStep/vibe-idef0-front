@@ -1,0 +1,20 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+#app {
+  background-color: #ffffff;
+}
+
+h1 {
+  padding: 20px;
+  font-size: 24px;
+  color: #333333;
+}

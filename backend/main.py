@@ -1,13 +1,13 @@
-from fastapi import FastAPI,HTTPException, APIRouter, Depends
 from enum import Enum
 from typing import Annotated
-
+from fastapi import FastAPI,HTTPException, APIRouter, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 import os
 
-from config import settings
+from config import get_settings
+from schemas import SDiagramQueryParams
 
 app=FastAPI(
     title="IDEF0 Generator",
@@ -22,16 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class DiagramVariantEnum(str, Enum):
-    simple = "simple"
-    complex = "complex"
-    empty = "empty"
-
-class DiagramQueryParams(BaseModel):
-    variant: DiagramVariantEnum = Field(
-        default=DiagramVariantEnum.simple,
-        description="Type of the IDEF0 diagram to retrieve"
-    )
 
 router_v1 = APIRouter(prefix="/api/v1", tags=["Diagrams"])
 
@@ -40,12 +30,13 @@ def health_check():
     return {"status":"ok", "service":"IDEF0 Generator Backend"}
 
 @router_v1.get("/diagram")
-def get_diagram(params: Annotated[DiagramQueryParams, Depends()]):
+def get_diagram(params: Annotated[SDiagramQueryParams, Depends()]):
     """
     It returns an XML file.
     The frontend will call this endpoint and receive the file contents.
     """
     filename=f"{params.variant.value}.xml"
+    settings=get_settings()
     file_path=os.path.join(settings.DATA_DIR,filename)
 
     if os.path.exists(file_path):

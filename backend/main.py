@@ -1,30 +1,42 @@
-from fastapi import FastAPI,HTTPException
+from fastapi import FastAPI,HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from dotenv import load_dotenv
+from enum import Enum
 import os
 
-app=FastAPI()
+load_dotenv()
+DATA_DIR = os.getenv("DATA_DIR", "data")
 
-# This allows the frontend (which runs, for example, on port 3000)
-# to make requests to your server on port 8000. 
-# Without this, the browser will block the request.
+
+app=FastAPI(
+    title="IDEF0 Generator",
+    version="0.1.0"
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # for developing
+    allow_origins=["*"], # TODO for developing. in production, replace with the frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-DATA_DIR="data"
+class DiagramVariant(str, Enum):
+    simple = "simple"
+    complex = "complex"
+    empty = "empty"
 
-@app.get("/")
-def read_root():
-    return {"status":"ok","message":"Backend is running!", "service":"IDEF0 Generator Backend"}
+router_v1 = APIRouter(prefix="/api/v1", tags=["Diagrams"])
 
-@app.get("/api/get-diagram")
+@app.get("/health",tags=["System"])
+def health_check():
+    return {"status":"ok", "service":"IDEF0 Generator Backend"}
+
+@router_v1.get("/diagram")
 def get_diagram(variant:str="simple"):
-    """It returns an XML file.
+    """
+    It returns an XML file.
     The frontend will call this endpoint and receive the file contents.
     """
     filename=f"{variant}.xml"
@@ -35,8 +47,4 @@ def get_diagram(variant:str="simple"):
     else:
         raise HTTPException(status_code=404,detail=f"Diagram '{filename}.xml' not found")
     
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app,host="127.0.0.1",port=8000)
-
+app.include_router(router_v1)

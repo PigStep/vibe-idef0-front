@@ -12,7 +12,7 @@ from schemas import SDiagramQueryParams
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format='%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
 )
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def get_diagram(params: Annotated[SDiagramQueryParams, Depends()]):
     It returns an XML file.
     The frontend will call this endpoint and receive the file contents.
     """
-    logger.info(f"Requested diagram type: {params.variant.value}")
+    logger.info("Requested diagram type: %s", params.variant.value)
     
     filename=f"{params.variant.value}.xml"
     settings=get_settings()
@@ -50,11 +50,14 @@ def get_diagram(params: Annotated[SDiagramQueryParams, Depends()]):
     base_path = Path(settings.DATA_DIR)
     file_path = base_path / filename
 
+
     if file_path.exists():
         return FileResponse(file_path,media_type='application/xml',filename=filename)
     else:
-        error_msg = f"Diagram '{filename}' not found in {base_path}"
+        error_msg = "Diagram %s not found in %s" % (filename,base_path)
         logger.error(error_msg)
         raise HTTPException(status_code=404,detail=error_msg)
     
 app.include_router(router_v1)
+
+

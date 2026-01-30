@@ -1,13 +1,20 @@
-from enum import Enum
+import logging
+from pathlib import Path
 from typing import Annotated
+
 from fastapi import FastAPI,HTTPException, APIRouter, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
-import os
 
 from config import get_settings
 from schemas import SDiagramQueryParams
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 app=FastAPI(
     title="IDEF0 Generator",
@@ -35,13 +42,19 @@ def get_diagram(params: Annotated[SDiagramQueryParams, Depends()]):
     It returns an XML file.
     The frontend will call this endpoint and receive the file contents.
     """
+    logger.info(f"Requested diagram type: {params.variant.value}")
+    
     filename=f"{params.variant.value}.xml"
     settings=get_settings()
-    file_path=os.path.join(settings.DATA_DIR,filename)
 
-    if os.path.exists(file_path):
+    base_path = Path(settings.DATA_DIR)
+    file_path = base_path / filename
+
+    if file_path.exists():
         return FileResponse(file_path,media_type='application/xml',filename=filename)
     else:
-        raise HTTPException(status_code=404,detail=f"Diagram '{filename}.xml' not found")
+        error_msg = f"Diagram '{filename}' not found in {base_path}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=404,detail=error_msg)
     
 app.include_router(router_v1)

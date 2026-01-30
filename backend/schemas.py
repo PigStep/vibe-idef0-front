@@ -1,14 +1,11 @@
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
-class DiagramVariantEnum(str, Enum):
+class DiagramVariantEnum(Enum):
     simple = "simple"
     complex = "complex"
     empty = "empty"
 
 class SDiagramQueryParams(BaseModel):
-    variant: DiagramVariantEnum = Field(
-        default=DiagramVariantEnum.simple,
-        description="Type of the IDEF0 diagram to retrieve"
-    )
+    variant: DiagramVariantEnum

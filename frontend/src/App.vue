@@ -1,14 +1,7 @@
 <template>
-  <div>
-    <h1>Редактор IDEF0 диаграмм</h1>
-  </div>
+  <DiagramEditor />
 </template>
 
-<script>
-export default {
-  name: 'App'
-}
+<script setup>
+import DiagramEditor from './components/DiagramEditor.vue'
 </script>
-
-<style>
-</style>

@@ -10,11 +10,7 @@ body {
 }
 
 #app {
-  background-color: #ffffff;
-}
-
-h1 {
-  padding: 20px;
-  font-size: 24px;
-  color: #333333;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }

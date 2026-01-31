@@ -225,3 +225,4 @@ frontend/*.local
 .idea
 .DS_Store
 *.sw?
+nul

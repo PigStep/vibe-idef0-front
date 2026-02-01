@@ -4,6 +4,9 @@
       <button @click="handleCreateChild" :disabled="!isDrawioReady">
         Create Child Diagram
       </button>
+      <button @click="loadDiagram" :disabled="!isDrawioReady">
+        Загрузить тест
+      </button>
     </div>
     <iframe
       ref="iframeRef"
@@ -37,10 +40,12 @@ const handleMessage = (event) => {
         console.log('Diagram loaded')
         break
       case 'export':
-        console.log('Diagram exported:', message.data)
+        console.log('Diagram exported (XML):', message.data)
         break
       case 'save':
-        console.log('Diagram saved')
+        console.log('Diagram saved - запрашиваем экспорт XML...')
+        // Запрашиваем экспорт диаграммы в формате XML
+        sendMessage('export', { format: 'xml' })
         break
       default:
         console.log('draw.io event:', message.event)
@@ -85,6 +90,32 @@ const handleCreateChild = () => {
   // Показываем alert для проверки интеграции
   alert('Create Child Diagram clicked! Integration works!')
   console.log('Create Child Diagram functionality will be implemented in next sprint')
+}
+
+const loadDiagram = async () => {
+  if (!isDrawioReady.value) {
+    alert('draw.io is not ready yet')
+    return
+  }
+
+  try {
+    console.log('Загрузка тестовой диаграммы...')
+    const response = await fetch('http://127.0.0.1:8000/api/v1/diagram')
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const xml = await response.text()
+    console.log('Получен XML от бэкенда:', xml)
+
+    // Отправляем XML в iframe
+    sendMessage('load', { xml: xml })
+    console.log('Диаграмма отправлена в iframe')
+  } catch (error) {
+    console.error('Ошибка при загрузке диаграммы:', error)
+    alert(`Ошибка загрузки: ${error.message}`)
+  }
 }
 
 onMounted(() => {

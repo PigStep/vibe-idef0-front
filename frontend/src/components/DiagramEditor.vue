@@ -100,7 +100,7 @@ const loadDiagram = async () => {
 
   try {
     console.log('Загрузка тестовой диаграммы...')
-    const response = await fetch('http://127.0.0.1:8000/api/v1/diagram')
+    const response = await fetch('http://127.0.0.1:8000/api/v1/diagram?variant=simple')
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)

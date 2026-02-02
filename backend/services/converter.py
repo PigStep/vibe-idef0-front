@@ -24,14 +24,20 @@ class IDEF0Converter:
         ET.SubElement(root, "mxCell", {"id": "0"})
         ET.SubElement(root, "mxCell", {"id": "layer_1", "parent": "0"})
 
+        node_coords:dict[int,tuple[int,int]]={}
+        
         for index,node in enumerate(data.nodes):
-            self._create_node_element(root,node,index)
+            x,y=self._create_node_element(root,node,index)
+            node_coords[node.id]=(x,y)
+
+        for edge in data.edges:
+            self._create_edge_element(root,edge,node_coords)
+
 
         ET.indent(mx_graph,space="  ",level=0)
-
         return ET.tostring(mx_graph,encoding='unicode',method='xml')
     
-    def _create_node_element(self,root:ET.Element,node,index:int):
+    def _create_node_element(self,root:ET.Element,node,index:int)->tuple[int,int]:
 
         x=self.START_X+(index*self.OFFSET_X)
         y=self.START_Y+(index*self.OFFSET_Y)
@@ -58,3 +64,67 @@ class IDEF0Converter:
             "as":"geometry"
         })
 
+        return x,y
+    
+    def _create_edge_element(self,root:ET.Element,edge:SEdge,node_coords:dict[int,tuple[int,int]]):
+        
+        style_parts=[
+            "edgeStyle=orthogonalEdgeStyle", 
+            "rounded=0", 
+            "orthogonalLoop=1", 
+            "jettySize=auto", 
+            "html=1"
+        ]
+
+        # Target Entry 
+        if edge.target_id is not None:
+            if edge.type==ICOMTypeEnum.input:
+                style_parts.append("entryX=0;entryY=0.5") #Left
+            elif edge.type==ICOMTypeEnum.control:
+                style_parts.append("entryX=0.5;entryY=0") #Top
+            elif edge.type==ICOMTypeEnum.mechanism:
+                style_parts.append("entryX=0.5;entryY=1") #Bottom
+            else:
+                style_parts.append("entryX=0;entryY=0.5") #TODO test when arrow comes from right block to left    
+
+        # Source Exit
+        if edge.source_id is not None:
+            style_parts.append("exitX=1;exitY=0.5")
+
+        edge_xml=ET.SubElement(root,"mxCell",{
+            "style":";".join(style_parts),
+            "parent":"layer_1",
+            "edge":"1",
+            "value":edge.label
+        })
+
+        # Binding Block IDs
+        if edge.source_id is not None:
+            edge_xml.set("source",str(edge.source_id))
+        if edge.target_id is not None:
+            edge_xml.set("target",str(edge.target_id))
+
+        geometry=ET.SubElement(edge_xml,"mxGeometry",{"relative":"1","as":"geometry"})
+
+        # Case: Source=None -> to Block
+        if edge.source_id is None and edge.target_id is not None:
+            target_x,target_y=node_coords.get(edge.target_id,(0,0))
+            start_x,start_y=target_x,target_y
+
+            if edge.type == ICOMTypeEnum.input:
+                start_x -= 60; start_y += self.BLOCK_HEIGHT / 2
+            elif edge.type == ICOMTypeEnum.control:
+                start_x += self.BLOCK_WIDTH / 2; start_y -= 60
+            elif edge.type == ICOMTypeEnum.mechanism:
+                start_x += self.BLOCK_WIDTH / 2; start_y += self.BLOCK_HEIGHT + 60    
+
+            ET.SubElement(geometry, "mxPoint", {"x": str(start_x), "y": str(start_y), "as": "sourcePoint"})
+
+        # Case: Target=None -> to Border
+        elif edge.target_id is None and edge.source_id is not None:
+            source_x, source_y = node_coords.get(edge.source_id, (0,0))
+            
+            end_x = source_x + self.BLOCK_WIDTH + 60
+            end_y = source_y + self.BLOCK_HEIGHT / 2
+            
+            ET.SubElement(geometry, "mxPoint", {"x": str(end_x), "y": str(end_y), "as": "targetPoint"})

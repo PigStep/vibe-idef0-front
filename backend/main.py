@@ -2,12 +2,13 @@ import logging
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI,HTTPException, APIRouter, Depends
+from fastapi import FastAPI,HTTPException, APIRouter, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from config import get_settings
-from schemas import SDiagramQueryParams
+from schemas import SDiagramQueryParams, SDiagramData
+from services.converter import IDEF0Converter
 
 
 logging.basicConfig(
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 app=FastAPI(
     title="IDEF0 Generator",
-    version="0.1.0"
+    version="0.2.0"
 )
 
 app.add_middleware(
@@ -58,6 +59,19 @@ def get_diagram(params: Annotated[SDiagramQueryParams, Depends()]):
         logger.error(error_msg)
         raise HTTPException(status_code=404,detail=error_msg)
     
+@router_v1.post("/generate")
+def generate_diagram(data:SDiagramData):
+    """
+    It takes a diagram structure (JSON) as input,
+    converts it, and returns the XML code.
+    """
+    logger.info("Generating XML for diagram: '%s' with %s nodes" % (data.name,len(data.nodes)))
+    try:
+        converter=IDEF0Converter()
+        xml_content=converter.convert_to_xml(data)
+        return Response(content=xml_content,media_type="application/xml")
+    except Exception as e:
+        logger.error("Error converting diagram: %s" % (e,))
+        raise HTTPException(status_code=500,detail="Conversion error: %s" % (str(e),))
+    
 app.include_router(router_v1)
-
-
